@@ -45,7 +45,8 @@ public class WidgetTest {
         assertEquals(1, logMessages.size());
         
         String logMessage = logMessages.get(0);
-        assertEquals("Creating a widget, context=[" + context + "]", logMessage);
+        assertThat(logMessage, containsString("Creating a widget"));
+        assertThat(logMessage, containsString(", context=[" + context + "]"));
     }
 
     @Test
@@ -68,7 +69,7 @@ public class WidgetTest {
         new Widget("", 42, context);
     }
 
-    @Test
+    @Test(expected=IllegalArgumentException.class)
     public void handleNegativeNumber() {
         thrown.expect(IllegalArgumentException.class);
         thrown.expectMessage("Number must be positive");
@@ -89,10 +90,19 @@ public class WidgetTest {
         try {
             new Widget(null, 42, context);
         } finally {
-            checkWarnLogMessage(
-                    "String must be supplied", 
-                    " requiredString=[null]",
-                    " context=[" + context + "]");
+            List<String> logMessages = 
+                    captureLogs.getLoggingEvents().stream()
+                        .filter(warnPredicate())
+                        .filter(classPredicate(Widget.class))
+                        .map(loggingEvent -> loggingEvent.getRenderedMessage())
+                        .collect(toList());
+            
+            assertEquals(1, logMessages.size());
+
+            String logMessage = logMessages.get(0);
+            assertThat(logMessage, containsString("String must be supplied"));
+            assertThat(logMessage, containsString(" requiredString=[null]"));
+            assertThat(logMessage, containsString(" context=[" + context + "]"));
         }
     }
     
