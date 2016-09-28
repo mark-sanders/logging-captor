@@ -5,8 +5,9 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-import static com.github.marksanders.logging.captor.CaptureLogs.warnPredicate;
 import static com.github.marksanders.logging.captor.CaptureLogs.classPredicate;
+import static com.github.marksanders.logging.captor.CaptureLogs.infoPredicate;
+import static com.github.marksanders.logging.captor.CaptureLogs.warnPredicate;
 
 import java.util.List;
 
@@ -28,9 +29,23 @@ public class WidgetTest {
 
     @Test
     public void testConstructor() {
+        
         Widget widget = new Widget("hello", 42, context);
+
         assertEquals("hello", widget.getRequiredString());
         assertEquals(42, widget.getRequiredPositiveNumber());
+
+        List<String> logMessages = 
+                captureLogs.getLoggingEvents().stream()
+                    .filter(infoPredicate())
+                    .filter(classPredicate(Widget.class))
+                    .map(loggingEvent -> loggingEvent.getRenderedMessage())
+                    .collect(toList());
+
+        assertEquals(1, logMessages.size());
+        
+        String logMessage = logMessages.get(0);
+        assertEquals("Creating a widget, context=[" + context + "]", logMessage);
     }
 
     @Test
@@ -74,7 +89,7 @@ public class WidgetTest {
         try {
             new Widget(null, 42, context);
         } finally {
-            checkLogMessage(
+            checkWarnLogMessage(
                     "String must be supplied", 
                     " requiredString=[null]",
                     " context=[" + context + "]");
@@ -91,7 +106,7 @@ public class WidgetTest {
         try {
             new Widget("", 42, context);
         } finally {
-            checkLogMessage(
+            checkWarnLogMessage(
                     "String must be supplied", 
                     " requiredString=[]",
                     " context=[" + context + "]");
@@ -108,14 +123,14 @@ public class WidgetTest {
         try {
             new Widget("hello", -42, context);
         } finally {
-            checkLogMessage(
+            checkWarnLogMessage(
                     "Number must be positive", 
                     " requiredPositiveNumber=[-42]",
                     " context=[" + context + "]");
         }
     }
 
-    private void checkLogMessage(String ... substrings) {
+    private void checkWarnLogMessage(String ... substrings) {
         List<String> logMessages = 
                 captureLogs.getLoggingEvents().stream()
                     .filter(warnPredicate())
